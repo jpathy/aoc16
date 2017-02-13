@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require racket/contract
-         racket/generator
          racket/match)
 
 (provide (contract-out
@@ -11,21 +10,21 @@
 (define (solve path n)
   (with-input-from-file path
     (lambda ()
-      (define (in-3s str-list)
-        (in-generator #:arity 3
-                      (let loop ([s (cons #\. str-list)])
-                        (match s
-                          [(list l c r _ ...)
-                           (yield l c r)
-                           (loop (cdr s))]
-                          [(list l c)
-                           (yield l c #\.)]))))
+      (define (in-rev-3s str-list)
+        (let loop ([s (cons #\. str-list)]
+                   [n '()])
+          (match s
+            [(list l c r _ ...)
+             (loop (cdr s) (cons (list l c r) n))]
+            [(list l c)
+             (cons (list l c #\.) n)])))
       (for/fold ([count 0]
                  [str (string->list (read-line))])
                 ([i (in-range n)])
         (define-values (cnt next) (for/fold ([cnt count]
                                              [s '()])
-                                            ([(l c r) (in-3s str)])
+                                            ([e (in-list (in-rev-3s str))])
+                                    (match-define (list l c r) e)
                                     (values (if (char=? c #\.)
                                                 (add1 cnt)
                                                 cnt)
@@ -33,7 +32,7 @@
                                                       #\.
                                                       #\^)
                                                   s))))
-        (values cnt (reverse next))))))
+        (values cnt next)))))
 
 (define (solve-1 path)
   (define-values (c _) (solve path 40))
